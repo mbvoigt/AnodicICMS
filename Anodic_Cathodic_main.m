@@ -4,7 +4,8 @@
 % The present script, inlcuding all accompanying sub-scripts, was used to
 % analyze the data and prepare the figures for the manuscript entitled
 % "Cathodic-leading pulses are more effective than anodic-leading pulses in
-% intracortical microstimulation" by Mathias B. Voigt and Andrej Kral.
+% intracortical microstimulation of the auditory cortex" 
+% by Mathias B. Voigt and Andrej Kral.
 %
 %
 % Abbreviations:
@@ -123,8 +124,40 @@ clear data data_calib calib_click calib_tone click_att dBAtteqto70dBSPL lowestAt
 
 %% Acoustic stimulation - Load acoustic click data
 
+% Load acoustically stimulated LFP data
+lfp = Load_LFP_Acoustic(cfg);
+
+% Figure 2A - LFP profile
+fH = figure();
+hold on
+for ch = 1:16
+    plot(squeeze(mean(lfp(:,ch,:)))-(200*ch),'k')
+end
+plot([1100 1100],[-17*4000 0],'--k')
+set(gca,'YLim',[-17*200 0],'XLim',[880 2201])
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Acoustic_LFP_example_profile')
+close(fH)
+clear lfp
+
 % Load acoustically stimulated CSD data
 csd = Load_CSD_Acoustic(cfg);
+
+% Figure 2A - CSD profile
+fH = figure();
+hold on
+for ch = 1:16
+    plot(squeeze(mean(csd(:,ch,:)))-(4000*ch),'k')
+    fillhelp=squeeze(mean(csd(:,ch,:)));
+    fillhelp(fillhelp<0) = 0;
+    patch([1,1:5501,5501],[-4000*ch;fillhelp-(4000*ch);-4000*ch],[0 0 0],'FaceColor','k','EdgeColor','none')
+    plot([1 5501],[-4000*ch -4000*ch],'--k')
+end
+plot([1100 1100],[-17*4000 0],'--k')
+plot([1000 1000],[-9000 -5000],'k','LineWidth',2)
+set(gca,'YLim',[-17*4000 0],'XLim',[880 2201])
+set(gcf,'Renderer','painters')
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Acoustic_CSD_example_profile')
+close(fH)
 
 % Determine (sink) peak amplitudes in the time window from 0 to 50 ms post-stimulation
 amp_click = squeeze(max(csd(:,:,:,1100:2200),[],4));
@@ -383,6 +416,88 @@ SSPol = tbl{4,2}/tbl{10,2};
 
 fprintf('3-way ANOVA:\n p = %6.4f\n R^2 strength: %d\n R^2 electrode: %d\n R^2 polarity: %d\n',p,SSstr,SSEle,SSPol);
 
+%% Electric stimulation - Varying depth - LFP - Load data
+
+% Load current-source density data for stimulation with varying depth
+[lfpAnod,lfpCath] = Load_LFP_Electric_VarDepth(cfg);
+
+% Save LFP data to file for convenience
+% save('D:\mbv\temp\Manuscript_anodic\anocath_layering_LFPs','lfpAnod','lfpCath','-v7.3')
+% load('D:\mbv\temp\Manuscript_anodic\anocath_layering_LFPs','lfpAnod','lfpCath')
+
+%% Electric stimulation - Varying depth - LFP - Figures
+
+% Average over stimulus repetitions for a stimulation current of ~ 6 µA
+lfpC = squeeze(mean(lfpCath(:,9,:,:,:),4));
+lfpA = squeeze(mean(lfpAnod(:,9,:,:,:),4));
+clear lfpCath lfpAnod
+
+% Figure 2B - Cathodic
+fH = figure();
+hold on
+for ch = 1:16
+    plot(squeeze(mean(lfpC(:,ch,:),1))-(200*ch),'k')
+end
+plot([1100 1100],[-17*4000 0],'--k')
+set(gca,'YLim',[-17*200 0],'XLim',[880 2201])
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Electric_LFP_example_profile_cath')
+close(fH)
+
+% Figure 2B - Anodic
+fH = figure();
+hold on
+for ch = 1:16
+    plot(squeeze(mean(lfpA(:,ch,:),1))-(200*ch),'k')
+end
+plot([1100 1100],[-17*4000 0],'--k')
+set(gca,'YLim',[-17*200 0],'XLim',[880 2201])
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Electric_LFP_example_profile_anod')
+close(fH)
+
+%
+% Figure 3A - "Activity matrices"
+% 
+ampAnod = squeeze(range(lfpA(:,:,:,1100:2200),4));
+ampCath = squeeze(range(lfpC(:,:,:,1100:2200),4));
+clear lfpA lfpC
+
+% Colorbar
+fH = figure();
+caxis([-600 600])
+colormap(bluewhitered())
+colorbar()
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_LFP_colorbar')
+close(fH)
+
+% Anodic
+fH = figure();
+imagesc(squeeze(mean(ampAnod))')
+caxis([-600 600])
+colormap(bluewhitered())
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_LFP_Anodic')
+close(fH)
+
+% Cathodic
+fH = figure();
+imagesc(squeeze(mean(ampCath))')
+caxis([-600 600])
+colormap(flip(bluewhitered()))
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_LFP_Cathodic')
+close(fH)
+
+% Difference
+fH = figure();
+imagesc((squeeze(mean(ampCath))-squeeze(mean(ampAnod)))')
+caxis([-600 600])
+colormap(flip(bluewhitered()))
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_LFP_Diff')
+close(fH)
+
+clear ampAnod ampCath
+
 %% Electric stimulation - Varying depth - CSD - Load data
 
 % Load current-source density data for stimulation with varying depth
@@ -395,7 +510,7 @@ fprintf('3-way ANOVA:\n p = %6.4f\n R^2 strength: %d\n R^2 electrode: %d\n R^2 p
 %% Electric stimulation - Varying depth - CSD - Example pictures
 
 % CSD examples
-% Figure 2A, 2B, 2C
+% Figure 2C, 2D, 2E
 % Examples used: Electrode 1, 9, and 16
 for el = 1:16
     fH = figure();
@@ -423,7 +538,6 @@ for el = 1:16
     close(fH)
 end
 
-
 %% Electric stimulation - Varying depth - CSD - Sink analysis
 
 % We analyzed only sinks, therefore all negative values were set to 0:
@@ -436,7 +550,44 @@ sinkAnod(sinkAnod<0)=0;
 ampAnod = max(sinkAnod(:,:,:,1100:2200),[],4);
 ampCath = max(sinkCath(:,:,:,1100:2200),[],4);
 
-% Figure 3A
+% Figure 3B - "Activity matrices"
+
+% Colorbar
+fH = figure();
+caxis([-35000 35000])
+colormap(bluewhitered())
+colorbar()
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_colorbar')
+close(fH)
+
+% Anodic
+fH = figure();
+imagesc(squeeze(mean(ampAnod))')
+caxis([-30000 30000])
+colormap(bluewhitered())
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_Anod')
+close(fH)
+
+% Cathodic
+fH = figure();
+imagesc(squeeze(mean(ampCath))')
+caxis([-30000 30000])
+colormap(flip(bluewhitered()))
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_Cath')
+close(fH)
+
+% Difference
+fH = figure();
+imagesc((squeeze(mean(ampCath))-squeeze(mean(ampAnod)))')
+caxis([-35000 35000])
+colormap(flip(bluewhitered()))
+axis square
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_Diff')
+close(fH)
+
+% Figure 3C
 fH = figure();
 hold on
 errorbar(mean(mean(ampAnod,3)),16:-1:1,std(mean(ampAnod,3))./sqrt(8),'o-r','horizontal')
@@ -452,29 +603,20 @@ fprintf('Anodic, mean: %3.2f +- %3.2f\n',mean(mean(mean(ampAnod,3)))/1000,std(me
 
 % Statistic
 % Difference in grand mean
-% [p,h,stats]=ranksum(mean(mean(ampAnod,3)),mean(mean(ampCath,3)))
+% [p,h,stats]=signrank(mean(mean(ampAnod,3)),mean(mean(ampCath,3)))
 
-% 2-way ANOVA
-y = [reshape(mean(ampCath,3),[],1);reshape(mean(ampAnod,3),[],1)];
-f1 = [reshape(repmat(1:16,8,1),[],1);reshape(repmat(1:16,8,1),[],1)];
-f2 = [ones(128,1);ones(128,1)*2];
-g = {f1,f2};
-[p,~,stats] = anovan(y,g,'model','full','varnames',{'StimElectrode','Polarity'});
-multcompare(stats,'Dimension',1); % post-hoc Tukey's HSD
+% repeated measures ANOVA
+anim = categorical(repmat((1:8)',16,1));
+stimel = categorical(reshape(repmat(1:16,8,1),[],1));
+t = table(anim,stimel,reshape(mean(ampCath,3),[],1),reshape(mean(ampAnod,3),[],1),'VariableNames',{'animal','StimEl','dC','dA'});
+within = table(categorical([1 2]',[1 2],{'cathodic','anodic'}),'VariableNames',{'polarity'});
+rm = fitrm(t,'dC,dA ~ StimEl','WithinDesign',within);
+ranovatbl = ranova(rm,'WithinModel','polarity'); %#ok! values are manually examined and reported in the manuscript
+c = multcompare(rm,'polarity','By','StimEl'); %#ok! post-hoc Tukey's HSD
 
-% Single comparisons between anodic- and cathodic-leading for every stimulation depth 
-for idx = 1:16
-    [p(idx),~,stats(idx)]=ranksum(mean(ampAnod(:,idx,:),3),mean(ampCath(:,idx,:),3));
-end
-
-% Benjamini-Hochberg correction
-psorted = sort(p);
-pcorrected = zeros(length(psorted),1);
-for idx = 1:length(psorted)
-    pk = idx./16.*0.05; % alpha = 0.05
-    pcorrected(idx) = psorted(idx) <= pk; % pcorrected gives the truly significant p-values
-end
-
+%
+% PEAK LATENCY
+%
 % Determination of peak latencies
 latAnod = zeros(8,16,16);
 latCath = zeros(8,16,16);
@@ -487,7 +629,7 @@ for exps = 1:8
     end
 end
 
-% Figure 3B
+% Figure 3D
 fH = figure();
 hold on
 errorbar(mean(mean(latAnod,3)),16:-1:1,std(mean(latAnod,3))./sqrt(8),'o-r','horizontal')
@@ -503,15 +645,25 @@ fprintf('Anodic, mean: %5.2f +- %6.2f\n',mean(mean(mean(latAnod,3))),std(mean(me
 
 % Statistic
 % Difference in grand mean
-[p,~,stats]=ranksum(mean(mean(latAnod,3)),mean(mean(latCath,3))); %#ok variables need to be inspected manually
+[p,~,stats]=signrank(mean(mean(latAnod,3)),mean(mean(latCath,3))); %#ok variables need to be inspected manually
 
-% 2-way ANOVA
-y = [reshape(mean(latCath,3),[],1);reshape(mean(latAnod,3),[],1)];
-f1 = [reshape(repmat(1:16,8,1),[],1);reshape(repmat(1:16,8,1),[],1)];
-f2 = [ones(128,1);ones(128,1)*2];
-g = {f1,f2};
-[~,~,stats] = anovan(y,g,'model','full','varnames',{'StimElectrode','Polarity'});
-multcompare(stats,'Dimension',1)
+% repeated measures ANOVA
+anim = categorical(repmat((1:8)',16,1));
+stimel = categorical(reshape(repmat(1:16,8,1),[],1));
+t = table(anim,stimel,reshape(mean(latCath,3),[],1),reshape(mean(latAnod,3),[],1),'VariableNames',{'animal','StimEl','lC','lA'});
+within = table(categorical([1 2]',[1 2],{'cathodic','anodic'}),'VariableNames',{'polarity'});
+rm = fitrm(t,'lC,lA ~ StimEl','WithinDesign',within);
+ranovatbl = ranova(rm,'WithinModel','polarity'); %#ok! Values are manually examined and reported in the manuscript
+c = multcompare(rm,'polarity','By','StimEl'); %#ok! Values are manually examined and reported in the manuscript
+
+% Correlation: Amplitude - Latency
+mampAnod = mean(mean(ampAnod,3));
+mampCath = mean(mean(ampCath,3));
+mlatAnod = mean(mean(latAnod,3));
+mlatCath = mean(mean(latCath,3));
+
+[rho,pval]=corr(mampCath(:),mlatCath(:),'type','spearman'); %#ok! Values are manually examined and reported in the manuscript
+[rho,pval]=corr(mampAnod(:),mlatAnod(:),'type','spearman');
 
 %% Electric stimulation - Varying depth - CSD - Normalization
 
@@ -974,16 +1126,19 @@ print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Layer_Spk_totalAm
 close(fH)
 
 % Statistics for boxplot
-% [p,h,stats] = ranksum(mean(ampCtotal,2),mean(ampAtotal,2))
+% [p,h,stats] = signrank(mean(ampCtotal,2),mean(ampAtotal,2))
 fprintf('MUA amplitude - cathodic: %4.2f +- %4.2f spikes\n',mean(mean(ampCtotal,2)),std(mean(ampCtotal,2)))
 fprintf('MUA amplitude -   anodic: %4.2f +- %4.2f spikes\n',mean(mean(ampAtotal,2)),std(mean(ampAtotal,2)))
 
-% 2-way ANOVA
-value = [ampCtotal(:);ampAtotal(:)];
-gEl = repmat((kron((1:16)',ones(8,1))),2,1);
-gPo = [ones(128,1);ones(128,1)*2];
-[p,tbl,stats]=anovan(value,{gEl,gPo},'varnames',{'electrode','polarity'},'model','full'); %#ok check results manually
-
+% repeated measures ANOVA
+anim = categorical(repmat((1:8)',16,1));
+stimel = categorical(reshape(repmat(1:16,8,1),[],1));
+t = table(anim,stimel,ampCtotal(:),ampAtotal(:),'VariableNames',{'animal','StimEl','dC','dA'});
+within = table(categorical([1 2]',[1 2],{'cathodic','anodic'}),'VariableNames',{'polarity'});
+rm = fitrm(t,'dC,dA ~ StimEl','WithinDesign',within);
+ranovatbl = ranova(rm,'WithinModel','polarity');
+multcompare(rm,'polarity');
+c = multcompare(rm,'polarity','By','StimEl');
 
 % Calculate spike index as ratio of number of spikes in first ms over
 % total number of spikes
@@ -1015,12 +1170,6 @@ set(gca,'XLim',[0 3],'YLim',[0 1])
 print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\Layer_Spk_1ms_boxplot')
 close(fH)
 % Statistics for boxplot
-% [p,h,stats] = ranksum(mean(ampC,2),mean(ampA,2))
+% [p,h,stats] = signrank(mean(ampC,2),mean(ampA,2))
 fprintf('SI - cathodic: %4.2f +- %4.2f spikes\n',mean(mean(ampC,2)),std(mean(ampC,2)))
 fprintf('SI -   anodic: %4.2f +- %4.2f spikes\n',mean(mean(ampA,2)),std(mean(ampA,2)))
-
-% 2-way ANOVA
-value = [ampC(:);ampA(:)];
-gEl = repmat((kron((1:16)',ones(8,1))),2,1);
-gPo = [ones(128,1);ones(128,1)*2];
-[p,tbl,stats]=anovan(value,{gEl,gPo},'varnames',{'electrode','polarity'},'model','full');
