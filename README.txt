@@ -4,7 +4,8 @@ of intracortical microstimulation
  The present script, inlcuding all accompanying sub-scripts, was used to
  analyze the data and prepare the figures for the manuscript entitled
  "Cathodic-leading pulses are more effective than anodic-leading pulses in
- intracortical microstimulation" by Mathias B. Voigt and Andrej Kral.
+ intracortical microstimulation of the auditory cortex" 
+ by Mathias B. Voigt and Andrej Kral.
 
  Abbreviations:
    CSD - Current-source density
