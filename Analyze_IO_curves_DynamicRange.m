@@ -2,7 +2,7 @@
 %
 % Subfunction for Anodic_Cathodic_main
 %
-% Plots figures: 4E, S4A, S4B
+% Plots figures: 4A, S5A, S5B
 %
 function [DRA,DRC,DRClick] = Analyze_IO_curves_DynamicRange(cfg,strengths,ampA,ampC,amp_click)
 
@@ -46,23 +46,23 @@ beta_clickM_log = nlinfit(1:17,nanmean(nanmean(amp_click(:,1:17,:),3),1),@(b,x)(
 
 % Align to a response amplitude equalling 0.5
 syms x
-eqn = betaMC_log(1)+(betaMC_log(2)./(1+exp(-betaMC_log(3)*(x-betaMC_log(4)))))==2;
+eqn = betaMC_log(1)+((betaMC_log(2)-betaMC_log(1))./(1+exp(-betaMC_log(3)*(x-betaMC_log(4)))))==0.5;
 offsetC = eval(solve(eqn,x));
-eqn = betaMA_log(1)+(betaMA_log(2)./(1+exp(-betaMA_log(3)*(x-betaMA_log(4)))))==2;
+eqn = betaMA_log(1)+((betaMA_log(2)-betaMA_log(1))./(1+exp(-betaMA_log(3)*(x-betaMA_log(4)))))==0.5;
 offsetA = eval(solve(eqn,x));
-eqn = beta_clickM_log(1)+(beta_clickM_log(2)./(1+exp(-beta_clickM_log(3)*(x-beta_clickM_log(4)))))==2;
+eqn = beta_clickM_log(1)+((beta_clickM_log(2)-beta_clickM_log(1))./(1+exp(-beta_clickM_log(3)*(x-beta_clickM_log(4)))))==0.5;
 offsetac = eval(solve(eqn,x));
 clear x eqn
 
-% Figure 4E, S4A, S4B
+% Figure 4A, S5A, S5B
 fH = figure();
 hold on
 scatter(str_log-offsetC,nanmean(nanmean(ampC(:,1:15,:),3),1),'filled','MarkerEdgeColor','none','MarkerFaceColor',[0 0 120/255],'MarkerFaceAlpha',0.4)
 plot(linspace(str_log(1),str_log(end),1000)-offsetC,betaMC_log(1)+(betaMC_log(2)./(1+exp(-betaMC_log(3)*(linspace(str_log(1),str_log(end),1000)-betaMC_log(4))))),'k-','MarkerSize',6,'MarkerEdgeColor','w','MarkerFaceColor','k')
 scatter(str_log-offsetA,nanmean(nanmean(ampA(:,1:15,:),3),1),'filled','MarkerEdgeColor','none','MarkerFaceColor',[120/255 0 0],'MarkerFaceAlpha',0.4)
 plot(linspace(str_log(1),str_log(end),1000)-offsetA,betaMA_log(1)+(betaMA_log(2)./(1+exp(-betaMA_log(3)*(linspace(str_log(1),str_log(end),1000)-betaMA_log(4))))),'r-','MarkerSize',6,'MarkerEdgeColor','w','MarkerFaceColor','k')
-scatter((1:17-offsetac)*5,nanmean(nanmean(amp_click(:,1:17,:),3),1),'filled','MarkerEdgeColor','none','MarkerFaceColor',[0 0 0],'MarkerFaceAlpha',0.4)
-plot((1:17-offsetac)*5,beta_clickM_log(1)+(beta_clickM_log(2)./(1+exp(-beta_clickM_log(3)*(1:17-beta_clickM_log(4))))),'k-','MarkerSize',6,'MarkerEdgeColor','w','MarkerFaceColor','k')
+scatter(((1:17)-offsetac)*5,nanmean(nanmean(amp_click(:,1:17,:),3),1),'filled','MarkerEdgeColor','none','MarkerFaceColor',[0 0 0],'MarkerFaceAlpha',0.4)
+plot(((1:17)-offsetac)*5,beta_clickM_log(1)+(beta_clickM_log(2)./(1+exp(-beta_clickM_log(3)*((1:17)-beta_clickM_log(4))))),'k-','MarkerSize',6,'MarkerEdgeColor','w','MarkerFaceColor','k')
 set(gca,'YLim',[0 1],'XLim',[-45 45])
 print(fH,'-dsvg','-r1200',['D:\mbv\temp\Manuscript_anodic\plots\IO_CSD_AcousticvsElectric_' cfg.saveFileString])
 close(fH)

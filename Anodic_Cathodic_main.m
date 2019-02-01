@@ -44,6 +44,8 @@ mbv_log('Preparing Analyses for Manuscript - Anodic vs. Cathodic leading & Monop
 cfg.Anoexps = findexperiments('expression','*layer*anod*');
 mbv_log(sprintf('Number of anodic experiments to analyze: %2d',length(cfg.Anoexps)),'file',cfg.logfile);
 mbv_log(['Anodic experiments to analyze: ' strjoin(cfg.Anoexps,', ')],'file',cfg.logfile);
+% Experiments with complete data sets
+cfg.Anoexps = cfg.Anoexps([1,3,5,6,7,8,10,11]);
 
 % Find experiment IDs which were stimulated anodic-leading with varying current
 cfg.SSAnoexps = findexperiments('expression','*SS*anod*');
@@ -59,8 +61,8 @@ mbv_log(['Number of channels: ' num2str(cfg.noChannels)],'file',cfg.logfile);
 % Channel mapping from the Neuronexus electrode array contacts to the 
 % Alpha Omega recording channels
 %
-cfg.channelidx = [9,8,10,7,11,6,12,5,13,4,14,3,15,2,16];
-%1,25,24,26,23,27,22,28,21,29,20,30,19,31,18,32,17,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];
+cfg.channelidx = [9,8,10,7,11,6,12,5,13,4,14,3,15,2,16,1];
+%25,24,26,23,27,22,28,21,29,20,30,19,31,18,32,17,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];
 mbv_log(['Channel order used: ' sprintf('%02d, ',cfg.channelidx)],'file',cfg.logfile);
 
 % Time windows for linear interpolation to blank the electrical stimulation
@@ -185,6 +187,10 @@ save('D:\mbv\temp\Manuscript_anodic\Acoustic_CSDs','amp_click','cfg')
 % save('D:\mbv\temp\Manuscript_anodic\IO_anocath_El1','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 % load('D:\mbv\temp\Manuscript_anodic\IO_anocath_El1','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 
+% We analyzed only sinks, therefore all negative values were set to 0:
+csdCath(csdCath<0)=0;
+csdAnod(csdAnod<0)=0;
+
 cfg.saveFileString = 'El1';
 
 % Calibrate the stimulation currents
@@ -201,17 +207,23 @@ strengths = StimulationCurrentCalibration(StimCurrent_Cathodic,StimCurrent_Anodi
 ampA = squeeze(max(csdAnod(:,:,:,1100:2200),[],4));
 ampC = squeeze(max(csdCath(:,:,:,1100:2200),[],4));
 
+% dB transformation re. 1 mV/mm^2
+ampAlog = 20*log10(ampA./1000);
+ampClog = 20*log10(ampC./1000);
+ampAlog(abs(ampAlog)==Inf)=NaN;
+ampClog(abs(ampClog)==Inf)=NaN;
+
 % Input/Output function and non-linear fits of electric stimulation
-[~,~,RsquaredC_E1,RsquaredA_E1,betaMC,betaMA,~,~] = Analyze_IO_curves(cfg,ampA,ampC);
+[~,~,RsquaredC_E1,RsquaredA_E1,~,~,~,~] = Analyze_IO_curves(cfg,ampA,ampC);
 clear RsquaredC RsquaredA RsquaredMC RsquaredMA StimCurrent_Cathodic StimCurrent_Anodic
 
 % Plot IO figures
-Plot_IO_figures(cfg,ampC,ampA,strengths,betaMC,betaMA)
-% Figures 4,S3A, S3B
+Plot_IO_figures(cfg,ampC,ampA,ampClog,ampAlog,strengths)
+% Figures S3A, S3B
 
 % Determine dynamic range
 [DRC_E1,DRA_E1,DRClick] = Analyze_IO_curves_DynamicRange(cfg,strengths,ampA,ampC,amp_click);
-% Figure 4E
+% Figure 4A
 
 % Re-save amplitude data to different variables for later comparisons
 ampA_E1 = ampA;
@@ -229,6 +241,10 @@ clear ampA ampC
 % save('D:\mbv\temp\Manuscript_anodic\IO_anocath_El9','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 % load('D:\mbv\temp\Manuscript_anodic\IO_anocath_El9','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 
+% We analyzed only sinks, therefore all negative values were set to 0:
+csdCath(csdCath<0)=0;
+csdAnod(csdAnod<0)=0;
+
 cfg.saveFileString = 'El9';
 
 % Determine stimulation thresholds
@@ -238,18 +254,24 @@ cfg.saveFileString = 'El9';
 ampA = squeeze(max(csdAnod(:,:,:,1100:2200),[],4));
 ampC = squeeze(max(csdCath(:,:,:,1100:2200),[],4));
 
+% dB transformation
+ampAlog = 20*log10(ampA./1000);
+ampClog = 20*log10(ampC./1000);
+ampAlog(abs(ampAlog)==Inf)=NaN;
+ampClog(abs(ampClog)==Inf)=NaN;
+
 % Input/Output function and non-linear fits of electric stimulation
-[~,~,RsquaredC_E9,RsquaredA_E9,betaMC,betaMA,~,~] = Analyze_IO_curves(cfg,ampA,ampC);
+[~,~,RsquaredC_E9,RsquaredA_E9,~,~,~,~] = Analyze_IO_curves(cfg,ampAlog,ampClog);
 clear RsquaredC RsquaredA RsquaredMC RsquaredMA StimCurrent_Cathodic StimCurrent_Anodic
 
 % Plot IO figures
 % Attention: Change YLimit in script for stimulation on electrode 9!
-Plot_IO_figures(cfg,ampC,ampA,strengths,betaMC,betaMA)
+Plot_IO_figures(cfg,ampC,ampA,ampClog,ampAlog,strengths)
 % Figures S3A, S3B
 
 % Determine dynamic range
 [DRC_E9,DRA_E9,~] = Analyze_IO_curves_DynamicRange(cfg,strengths,ampA,ampC,amp_click);
-% Figure S4A
+% Figure S5A
 
 % Re-save amplitude data to different variables for later comparisons
 ampA_E9 = ampA;
@@ -267,6 +289,10 @@ clear ampA ampC
 % save('D:\mbv\temp\Manuscript_anodic\IO_anocath_El16','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 % load('D:\mbv\temp\Manuscript_anodic\IO_anocath_El16','csdCath','csdAnod','StimCurrent_Cathodic','StimCurrent_Anodic')
 
+% We analyzed only sinks, therefore all negative values were set to 0:
+csdCath(csdCath<0)=0;
+csdAnod(csdAnod<0)=0;
+
 cfg.saveFileString = 'El16';
 
 % Determine stimulation thresholds
@@ -276,12 +302,18 @@ cfg.saveFileString = 'El16';
 ampA = squeeze(max(csdAnod(:,:,:,1100:2200),[],4));
 ampC = squeeze(max(csdCath(:,:,:,1100:2200),[],4));
 
+% dB transformation
+ampAlog = 20*log10(ampA./1000);
+ampClog = 20*log10(ampC./1000);
+ampAlog(abs(ampAlog)==Inf)=NaN;
+ampClog(abs(ampClog)==Inf)=NaN;
+
 % Input/Output function and non-linear fits of electric stimulation
-[betaC,betaA,RsquaredC_E16,RsquaredA_E16,betaMC,betaMA,~,~] = Analyze_IO_curves(cfg,ampA,ampC);
+[betaC,betaA,RsquaredC_E16,RsquaredA_E16,~,~,~,~] = Analyze_IO_curves(cfg,ampA,ampC);
 clear RsquaredC RsquaredA RsquaredMC RsquaredMA StimCurrent_Cathodic StimCurrent_Anodic
 
 % Plot IO figures
-Plot_IO_figures(cfg,ampC,ampA,strengths,betaMC,betaMA)
+Plot_IO_figures(cfg,ampC,ampA,ampClog,ampAlog,strengths)
 % Figures S3A, S3B
 
 % Determine dynamic range
@@ -353,33 +385,7 @@ close(fH)
 % [p,tbl,stats]=kruskalwallis([RsquaredC_E1' RsquaredA_E1' RsquaredC_E9' RsquaredA_E9' RsquaredC_E16' RsquaredA_E16' Rsquared_click'])
 % c = multcompare(stats) % post-hoc Tukey HSD
 
-% Difference Cathodic-Anodic
-% Figure 4B
-fH = figure();
-hold on
-scatter(ones(8,1),mean(mean(ampC_E1,3),2)-mean(mean(ampA_E1,3),2),'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.2)
-scatter(ones(8,1)*2,mean(mean(ampC_E9,3),2)-mean(mean(ampA_E9,3),2),'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.2)
-scatter(ones(8,1)*3,mean(mean(ampC_E16,3),2)-mean(mean(ampA_E16,3),2),'filled','MarkerFaceColor','k','MarkerFaceAlpha',0.2)
-boxplot([mean(mean(ampC_E1,3),2)-mean(mean(ampA_E1,3),2),mean(mean(ampC_E9,3),2)-mean(mean(ampA_E9,3),2),mean(mean(ampC_E16,3),2)-mean(mean(ampA_E16,3),2)])
-plot([0 4],[0 0],':k')
-set(gca,'XLim',[0 4],'YLim',[-1000 2500])
-print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\IO_CSD_Diff')
-close(fH)
-
 % Dynamic range
-% Figure 4F
-fH = figure();
-hold on
-plot(ones(1,8),DRC_E1,'ok')
-plot(ones(1,8)*2,DRA_E1,'ok')
-plot(ones(1,8)*3,DRC_E9,'ok')
-plot(ones(1,8)*4,DRA_E9,'ok')
-plot(ones(1,8)*5,DRC_E16,'ok')
-plot(ones(1,8)*6,DRA_E16,'ok')
-plot(ones(1,8)*7,DRClick,'ok')
-boxplot([DRC_E1' DRA_E1' DRC_E9' DRA_E9' DRC_E16' DRA_E16' DRClick'],'Colors','k');
-print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\IO_CSD_DynamicRange')
-close(fH)
 % Statistics
 % [p,tbl,stats] = kruskalwallis([DRC_E1' DRA_E1' DRC_E9' DRA_E9' DRC_E16' DRA_E16' DRClick']);
 % c = multcompare(stats);
@@ -390,29 +396,34 @@ fprintf('DR - click:    %5.3f +- %5.3f\n',nanmean(DRClick),nanstd(DRClick))
 
 %% Electric stimulation - Input/Output function - Statistics - 3-way ANOVA
 
-% Take mean over all recording electrodes
-ampA_E1 = squeeze(mean(ampA_E1,3));
-ampC_E1 = squeeze(mean(ampC_E1,3));
-ampA_E9 = squeeze(mean(ampA_E9,3));
-ampC_E9 = squeeze(mean(ampC_E9,3));
-ampA_E16 = squeeze(mean(ampA_E16,3));
-ampC_E16 = squeeze(mean(ampC_E16,3));
+% Transformation to dB re. 1 mV/mm^2
+ampA_E1 = 20.*log10(squeeze(nanmean(ampA_E1,3))./1000);
+ampC_E1 = 20.*log10(squeeze(nanmean(ampC_E1,3))./1000);
+ampA_E9 = 20.*log10(squeeze(nanmean(ampA_E9,3))./1000);
+ampC_E9 = 20.*log10(squeeze(nanmean(ampC_E9,3))./1000);
+ampA_E16 = 20.*log10(squeeze(nanmean(ampA_E16,3))./1000);
+ampC_E16 = 20.*log10(squeeze(nanmean(ampC_E16,3))./1000);
 
-% Concatenate for testing
-values = [ampC_E1(:);ampC_E9(:);ampC_E16(:);ampA_E1(:);ampA_E9(:);ampA_E16(:)];
+% Transformation of stimulation current to dB re. 1 µA
+strlog = 20*log10((strengths)/(1));
 
-% Define factors
-gStr = repmat((kron((1:15)',ones(8,1))),6,1); % Stimulation strength
-gEle = repmat((kron((1:3)',ones(8*15,1))),2,1); % Stimulated electrode
-gPol = [ones(8*15*3,1);ones(8*15*3,1)*2];  % Leading-phase polarity
+vC = [ampC_E1(:);ampC_E9(:);ampC_E16(:)];
+vA = [ampA_E1(:);ampA_E9(:);ampA_E16(:)];
 
-% ANOVA
-[p,tbl,~]=anovan(values,{gStr,gEle,gPol},'varnames',{'strength','electrode','polarity'},'model','full');
+gStr = categorical(repmat((kron((strlog)',ones(8,1))),3,1));
+gEle = categorical(repmat((kron((1:3)',ones(8*15,1))),1,1));
+
+t = table(gEle,gStr,vC,vA,'VariableNames',{'Electrode','Current','vCath','vAnod'});
+within = table(categorical([1 2]',[1 2],{'cathodic','anodic'}),'VariableNames',{'polarity'});
+rm = fitrm(t,'vCath,vAnod ~ Electrode*Current','WithinDesign',within);
+ranovatbl = ranova(rm,'WithinModel','polarity');
+
+multcompare(rm,'polarity')
 
 % Calculate R^2 as ratio of variance explained by the different factors
-SSstr = tbl{2,2}/tbl{10,2};
-SSEle = tbl{3,2}/tbl{10,2};
-SSPol = tbl{4,2}/tbl{10,2};
+SSstr = ranovatbl{3,1}/sum(ranovatbl{:,1});
+SSEle = ranovatbl{2,1}/sum(ranovatbl{:,1});
+SSPol = ranovatbl{6,1}/sum(ranovatbl{:,1});
 
 fprintf('3-way ANOVA:\n p = %6.4f\n R^2 strength: %d\n R^2 electrode: %d\n R^2 polarity: %d\n',p,SSstr,SSEle,SSPol);
 
@@ -427,10 +438,9 @@ fprintf('3-way ANOVA:\n p = %6.4f\n R^2 strength: %d\n R^2 electrode: %d\n R^2 p
 
 %% Electric stimulation - Varying depth - LFP - Figures
 
-% Average over stimulus repetitions for a stimulation current of ~ 6 µA
+% Average over stimulus repetitions for a stimulation on the 9th electrode
 lfpC = squeeze(mean(lfpCath(:,9,:,:,:),4));
 lfpA = squeeze(mean(lfpAnod(:,9,:,:,:),4));
-clear lfpCath lfpAnod
 
 % Figure 2B - Cathodic
 fH = figure();
@@ -457,9 +467,20 @@ close(fH)
 %
 % Figure 3A - "Activity matrices"
 % 
-ampAnod = squeeze(range(lfpA(:,:,:,1100:2200),4));
-ampCath = squeeze(range(lfpC(:,:,:,1100:2200),4));
-clear lfpA lfpC
+% Amplitude
+for eID = 1:length(cfg.Anoexps)
+    if strcmp(cfg.Anoexps{eID},'GP11K15CL')
+        lfppC(eID,:,:,:,:) = lfpCath(eID,:,[9,8,10,7,13,4,12,5,15,2,16,1,14,3,11,6],:,:);
+        lfppA(eID,:,:,:,:) = lfpAnod(eID,:,[9,8,10,7,13,4,12,5,15,2,16,1,14,3,11,6],:,:);
+    else
+        lfppC(eID,:,:,:,:) = lfpCath(eID,:,cfg.channelidx(1:16),:,:);
+        lfppA(eID,:,:,:,:) = lfpAnod(eID,:,cfg.channelidx(1:16),:,:);
+    end
+end
+lfppC = squeeze(mean(lfppC,4));
+lfppA = squeeze(mean(lfppA,4));
+ampAnod = squeeze(range(lfppA(:,:,:,1100:2200),4));
+ampCath = squeeze(range(lfppC(:,:,:,1100:2200),4));
 
 % Colorbar
 fH = figure();
@@ -493,6 +514,7 @@ imagesc((squeeze(mean(ampCath))-squeeze(mean(ampAnod)))')
 caxis([-600 600])
 colormap(flip(bluewhitered()))
 axis square
+colorbar()
 print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_LFP_Diff')
 close(fH)
 
@@ -550,6 +572,21 @@ sinkAnod(sinkAnod<0)=0;
 ampAnod = max(sinkAnod(:,:,:,1100:2200),[],4);
 ampCath = max(sinkCath(:,:,:,1100:2200),[],4);
 
+% Log transformation
+ampAnodlog = 20.*log10((ampAnod)./(1000));
+ampCathlog = 20.*log10((ampCath)./(1000));
+difCSD = 20.*log10(ampCath./ampAnod);
+difCSD(difCSD==-Inf)=NaN;
+difCSD(difCSD==Inf)=NaN;
+
+% Remove stimulating electrode
+for eID = 1:size(difCSD,1)
+    for ch = 1:16
+        difCSD(eID,ch,ch) = NaN;
+    end
+end
+
+
 % Figure 3B - "Activity matrices"
 
 % Colorbar
@@ -587,28 +624,33 @@ axis square
 print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\AM_Diff')
 close(fH)
 
-% Figure 3C
+% Figure 3C - dB
+ampAnodlog(ampAnodlog==-Inf)=NaN;
+ampAnodlog(ampAnodlog==Inf)=NaN;
+ampCathlog(ampCathlog==-Inf)=NaN;
+ampCathlog(ampCathlog==Inf)=NaN;
+
 fH = figure();
 hold on
-errorbar(mean(mean(ampAnod,3)),16:-1:1,std(mean(ampAnod,3))./sqrt(8),'o-r','horizontal')
-errorbar(mean(mean(ampCath,3)),16:-1:1,std(mean(ampCath,3))./sqrt(8),'o-k','horizontal')
-errorbar(mean(mean(mean(ampAnod,3))),0,std(mean(mean(ampAnod,3)))./sqrt(8),'o-r','horizontal')
-errorbar(mean(mean(mean(ampCath,3))),-1,std(mean(mean(ampCath,3)))./sqrt(8),'o-k','horizontal')
-print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\CSD_Ano_CSDamplitudes')
+errorbar(nanmean(nanmean(ampAnodlog,3)),16:-1:1,nanstd(nanmean(ampAnodlog,3))./sqrt(8),'o-r','horizontal')
+errorbar(nanmean(nanmean(ampCathlog,3)),16:-1:1,nanstd(nanmean(ampCathlog,3))./sqrt(8),'o-k','horizontal')
+errorbar(nanmean(nanmean(nanmean(ampAnodlog,3))),0,nanstd(nanmean(nanmean(ampAnodlog,3)))./sqrt(8),'o-r','horizontal')
+errorbar(nanmean(nanmean(nanmean(ampCathlog,3))),-1,nanstd(nanmean(nanmean(ampCathlog,3)))./sqrt(8),'o-k','horizontal')
+print(fH,'-dsvg','-r1200','D:\mbv\temp\Manuscript_anodic\plots\CSD_Ano_CSDamplitudes_dB')
 close(fH)
 
-% Measures:
-fprintf('Cathodic, mean: %3.2f +- %3.2f\n',mean(mean(mean(ampCath,3)))/1000,std(mean(mean(ampCath,3)))/1000)
-fprintf('Anodic, mean: %3.2f +- %3.2f\n',mean(mean(mean(ampAnod,3)))/1000,std(mean(mean(ampAnod,3)))/1000)
+% Measures - dB:
+fprintf('Cathodic, mean: %3.2f +- %3.2f\n',nanmean(nanmean(nanmean(ampCathlog,3))),nanstd(nanmean(nanmean(ampCathlog,3))))
+fprintf('Anodic, mean: %3.2f +- %3.2f\n',nanmean(nanmean(nanmean(ampAnodlog,3))),nanstd(nanmean(nanmean(ampAnodlog,3))))
 
-% Statistic
+% Statistic - dB
 % Difference in grand mean
-% [p,h,stats]=signrank(mean(mean(ampAnod,3)),mean(mean(ampCath,3)))
+% [p,h,stats]=signrank(nanmean(nanmean(ampAnodlog,3)),nanmean(nanmean(ampCathlog,3)))
 
-% repeated measures ANOVA
+% repeated measures ANOVA - dB
 anim = categorical(repmat((1:8)',16,1));
 stimel = categorical(reshape(repmat(1:16,8,1),[],1));
-t = table(anim,stimel,reshape(mean(ampCath,3),[],1),reshape(mean(ampAnod,3),[],1),'VariableNames',{'animal','StimEl','dC','dA'});
+t = table(anim,stimel,reshape(nanmean(ampCathlog,3),[],1),reshape(nanmean(ampAnodlog,3),[],1),'VariableNames',{'animal','StimEl','dC','dA'});
 within = table(categorical([1 2]',[1 2],{'cathodic','anodic'}),'VariableNames',{'polarity'});
 rm = fitrm(t,'dC,dA ~ StimEl','WithinDesign',within);
 ranovatbl = ranova(rm,'WithinModel','polarity'); %#ok! values are manually examined and reported in the manuscript
@@ -657,8 +699,8 @@ ranovatbl = ranova(rm,'WithinModel','polarity'); %#ok! Values are manually exami
 c = multcompare(rm,'polarity','By','StimEl'); %#ok! Values are manually examined and reported in the manuscript
 
 % Correlation: Amplitude - Latency
-mampAnod = mean(mean(ampAnod,3));
-mampCath = mean(mean(ampCath,3));
+mampAnod = nanmean(nanmean(ampAnodlog,3));
+mampCath = nanmean(nanmean(ampCathlog,3));
 mlatAnod = mean(mean(latAnod,3));
 mlatCath = mean(mean(latCath,3));
 
